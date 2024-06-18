@@ -30,6 +30,7 @@ from text import nonewlines
 
 @dataclass
 class Document:
+    # This class represents a document with various properties such as id, content, embedding, etc.
     id: Optional[str]
     content: Optional[str]
     embedding: Optional[List[float]]
@@ -44,6 +45,7 @@ class Document:
     reranker_score: Optional[float] = None
 
     def serialize_for_results(self) -> dict[str, Any]:
+    # This method serializes the document for results. It trims the embedding using the trim_embedding method.
         return {
             "id": self.id,
             "content": self.content,
@@ -71,6 +73,7 @@ class Document:
         }
 
     @classmethod
+    # This method trims the embedding vector to show only the first two items and the count of the remaining items.
     def trim_embedding(cls, embedding: Optional[List[float]]) -> Optional[str]:
         """Returns a trimmed list of floats from the vector embedding."""
         if embedding:
@@ -85,12 +88,14 @@ class Document:
 
 @dataclass
 class ThoughtStep:
+    # This class represents a thought step with properties such as title, description, and props.
     title: str
     description: Optional[Any]
     props: Optional[dict[str, Any]] = None
 
 
 class Approach(ABC):
+    # This is an abstract base class for different approaches. It contains methods for building filters, searching, getting sources content, etc.
     def __init__(
         self,
         search_client: SearchClient,
@@ -118,6 +123,7 @@ class Approach(ABC):
         self.vision_token_provider = vision_token_provider
 
     def build_filter(self, overrides: dict[str, Any], auth_claims: dict[str, Any]) -> Optional[str]:
+        # This method builds a filter based on the provided overrides and auth claims.
         exclude_category = overrides.get("exclude_category")
         security_filter = self.auth_helper.build_security_filters(overrides, auth_claims)
         filters = []
@@ -140,6 +146,7 @@ class Approach(ABC):
         minimum_search_score: Optional[float],
         minimum_reranker_score: Optional[float],
     ) -> List[Document]:
+         # This method performs a search operation based on various parameters such as top, query_text, filter, vectors, etc.
         search_text = query_text if use_text_search else ""
         search_vectors = vectors if use_vector_search else []
         if use_semantic_ranker:
@@ -197,6 +204,7 @@ class Approach(ABC):
     def get_sources_content(
         self, results: List[Document], use_semantic_captions: bool, use_image_citation: bool
     ) -> list[str]:
+        # This method gets the content of the sources based on whether semantic captions and image citation are used.
         if use_semantic_captions:
             return [
                 (self.get_citation((doc.sourcepage or ""), use_image_citation))
@@ -211,6 +219,7 @@ class Approach(ABC):
             ]
 
     def get_citation(self, sourcepage: str, use_image_citation: bool) -> str:
+    # This method gets the citation for a source page based on whether image citation is used.
         if use_image_citation:
             return sourcepage
         else:
@@ -223,6 +232,7 @@ class Approach(ABC):
             return sourcepage
 
     async def compute_text_embedding(self, q: str):
+        # This method computes the text embedding for a given query string.
         SUPPORTED_DIMENSIONS_MODEL = {
             "text-embedding-ada-002": False,
             "text-embedding-3-small": True,
@@ -245,6 +255,7 @@ class Approach(ABC):
         return VectorizedQuery(vector=query_vector, k_nearest_neighbors=50, fields="embedding")
 
     async def compute_image_embedding(self, q: str):
+     # This method computes the image embedding for a given query string.
         endpoint = urljoin(self.vision_endpoint, "computervision/retrieval:vectorizeText")
         headers = {"Content-Type": "application/json"}
         params = {"api-version": "2023-02-01-preview", "modelVersion": "latest"}
@@ -265,6 +276,7 @@ class Approach(ABC):
         messages: list[ChatCompletionMessageParam],
         session_state: Any = None,
         context: dict[str, Any] = {},
+         # This is an abstract method that needs to be implemented by subclasses. It is intended to run the approach.
     ) -> dict[str, Any]:
         raise NotImplementedError
 
@@ -274,4 +286,5 @@ class Approach(ABC):
         session_state: Any = None,
         context: dict[str, Any] = {},
     ) -> AsyncGenerator[dict[str, Any], None]:
+        # This is an abstract method that needs to be implemented by subclasses. It is intended to run the approach in a streaming manner.
         raise NotImplementedError
